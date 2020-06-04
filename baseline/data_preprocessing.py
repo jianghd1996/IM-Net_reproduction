@@ -6,7 +6,7 @@ import random
 
 if __name__ == "__main__":
     category = "Chair"
-    filename = os.listdir(os.path.join("data", category))
+    filename = os.listdir(os.path.join("../data", category))
     random.shuffle(filename)
     resolution = [8, 16, 32, 64]
     for file in tqdm(filename):
