@@ -45,7 +45,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py # GPU user
 
 Network structure
 
-![](result\network.JPG)
+![](https://github.com/jianghd1996/IM-Net_reproduction/blob/master/result/network.JPG)
 
 
 
@@ -98,12 +98,12 @@ and open the link `localhost:16008` in explorer to see the training curves.
 
 ## Example Result
 
-![](result\result.JPG)
+![](https://github.com/jianghd1996/IM-Net_reproduction/blob/master/result/result.JPG)
 
 (a) is groundtruth, (b) is result of baseline, (c) is result of soft boundary, the noise is much less in soft boundary
 
 
 
-![](result\interpolation.JPG)
+![](https://github.com/jianghd1996/IM-Net_reproduction/blob/master/result/interpolation.JPG)
 
 Interpolation result, (a) is result of baseline, (b) is result of soft boundary, with smooth operation, the noise is filtered in (a). The detail is better in (b) in the third and fifth chairs (from left to right)
