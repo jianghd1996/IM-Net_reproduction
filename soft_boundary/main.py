@@ -106,23 +106,31 @@ class TrainClock(object):
         self.step = ckpt['step']
 
 class ShapeNet(data.Dataset):
-    def __init__(self, data_path, point_batch_size, resolution, category, split_list):
+    def __init__(self, data_path, point_batch_size, category, ratio, split_list):
         self.data = []
+        self.ratio = ratio
         self.pbz = point_batch_size
-        self.data_path = os.path.join("../processed_data", category)
+        self.data_path = os.path.join("../soft_data", category)
         name_list = json.load(open(split_list, "r"))
         for i in range(len(name_list)):
             file = os.path.join(self.data_path, name_list[i]['anno_id']+".npy")
             if not os.path.exists(file):
                 continue
             self.data.append(name_list[i]['anno_id'])
-        self.resolution = resolution
 
     def __getitem__(self, index):
         data = np.load(os.path.join(self.data_path, self.data[index]+".npy"), allow_pickle=True)
         data = data[()]
-        points = data[self.resolution][1]
-        voxel = data[64][0]
+        point = data[1]
+        voxel = data[0]
+
+        points = []
+        for i in range(3):
+            e_point = list(filter(lambda x: x[1] == i+1, point))
+            e_point = list(map(lambda  x: x[0], e_point))
+            random.shuffle(e_point)
+            num = int(self.pbz * self.ratio[i])
+            points += e_point[:num]
 
         if len(points) < self.pbz:
             for i in range(max(0, self.pbz - len(points))):
@@ -161,33 +169,28 @@ class Agent(object):
 
         self.category = category
 
+        self.ratio = np.array([0, 5, 10])
+
     def generate_dataset(self):
-        epoch = [0, 50, 120]
-        res = [16, 32, 64]
-        point_batch_size = [4096, 4096, 4096]
+        # weight = 1, 2, 3
+        self.ratio[0] += 1
+        self.ratio[1] = min(self.ratio[1] + 1, 50)
 
-        resolution = 0
-        pbz = 0
-        flag = 0
-        for i in range(3):
-            if self.clock.epoch >= epoch[i]:
-                resolution = res[i]
-                pbz = point_batch_size[i]
-            if self.clock.epoch == epoch[i]:
-                flag = 1
-
-        if flag == 0:
+        if self.clock.epoch % 10 != 0:
             return
 
+        ratio = self.ratio / sum(self.ratio)
+        print("epoch {} , dataset ratio {}".format(self.clock.epoch, ratio))
+
         self.train_loader = torch.utils.data.DataLoader(
-            ShapeNet(os.path.join(self.data_path, self.category), point_batch_size=pbz, resolution=resolution, category=self.category,
-                     split_list=os.path.join(self.data_path, "train_val_test_split", self.category + ".train.json")),
+            ShapeNet(os.path.join(self.data_path, self.category), point_batch_size=4096, category=self.category,
+                     ratio=ratio, split_list=os.path.join(self.data_path, "train_val_test_split", self.category + ".train.json")),
             batch_size=16, shuffle=True, num_workers=16, pin_memory=True, drop_last=True
         )
 
         self.val_loader = torch.utils.data.DataLoader(
-            ShapeNet(os.path.join(self.data_path, self.category), point_batch_size=pbz, resolution=resolution, category=self.category,
-                     split_list=os.path.join(self.data_path, "train_val_test_split", self.category + ".val.json")),
+            ShapeNet(os.path.join(self.data_path, self.category), point_batch_size=4096, category=self.category,
+                     ratio=ratio, split_list=os.path.join(self.data_path, "train_val_test_split", self.category + ".val.json")),
             batch_size=16, shuffle=False, num_workers=16, pin_memory=True, drop_last=True
         )
 
@@ -196,11 +199,9 @@ class Agent(object):
     def train(self):
         val_frequency = 20
         for e in range(self.clock.epoch, self.epoch):
-            print(e)
             self.generate_dataset()
             pbar = tqdm(self.train_loader)
             for b, data in enumerate(pbar):
-                loss = self.train_func(data)
                 loss = self.train_func(data)
                 self.update_network(loss)
 
@@ -220,7 +221,7 @@ class Agent(object):
     def test(self):
         self.load_ckpt()
         self.test_loader = torch.utils.data.DataLoader(
-            ShapeNet(os.path.join(self.data_path, self.category), point_batch_size=4096, resolution=64, category=self.category,
+            ShapeNet(os.path.join(self.data_path, self.category), point_batch_size=4096, category=self.category,
                      split_list=os.path.join(self.data_path, "train_val_test_split", self.category + ".test.json")),
             batch_size=4, shuffle=False, num_workers=8, pin_memory=True, drop_last=True
         )
@@ -381,8 +382,8 @@ class Agent(object):
             name_list = json.load(
                 open(os.path.join(self.data_path, "train_val_test_split", self.category + ".test.json"), "r"))
             # random.shuffle(name_list)
-            A = name_list[5]['anno_id']+".h5"
-            B = name_list[6]['anno_id']+".h5"
+            A = name_list[5]['anno_id'] + ".h5"
+            B = name_list[6]['anno_id'] + ".h5"
         else:
             A = str(A) + ".h5"
             B = str(B) + ".h5"
@@ -403,8 +404,7 @@ class Agent(object):
         zB = self.net.getz(torch.tensor(B).unsqueeze(0).cuda())
 
         for i in tqdm(range(11)):
-            latentz = (zA * i + zB * (10-i)) / 10
-
+            latentz = (zA * i + zB * (10 - i)) / 10
 
             d_voxel = np.zeros((64, 64, 64))
             for x in range(64):
@@ -444,5 +444,4 @@ if __name__ == "__main__":
     agent.train()
     # agent.visualization(10)
     # agent.interpolation()
-
 

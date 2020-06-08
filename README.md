@@ -1,5 +1,7 @@
 # IM-Net_reproduction
-This repository is the project for course Deep Generation Model. In this project, I try to reproduce [IM-Net](https://www.sfu.ca/~zhiqinc/imgan/Readme.html) in pytorch and optimize the training process.
+This repository is the project for course Deep Generation Model. In this project, I try to reproduce [IM-Net](https://www.sfu.ca/~zhiqinc/imgan/Readme.html) in pytorch and optimize the sampling and training process.
+
+There are two sampling methods in this repo,  `baseline` is multi resolution training and `soft_boundary` is soft boundary training process. 
 
 
 
@@ -20,34 +22,65 @@ We use dataset in [PartNet](https://cs.stanford.edu/~kaichun/partnet/) and voxel
 
 
 
+## Sampling
+
+Before training the shape, you need to do the data sampling by
+
+```python
+python data_processing.py
+```
+
+the sampling method in `baseline` will generate a new folder `processed_data` in the root path and another in `soft_boundary` will generate `soft_data`
+
 
 
 ## Training
 
-In the `baseline` / `optimized_sampling` folder, run ```python data_preprocessing.py``` 
-
-
-to do the post processing sampling on dataset and it will generate a folder `processed_data` under the `baseline` folder
-
-Then run
+After sampling the shape, simply run
 
 ```python
 python main.py
 CUDA_VISIBLE_DEVICES=0 python main.py # GPU user
 ```
 
+Network structure
+
+![](result\network.JPG)
+
 
 
 ## Testing and visualization
 
-We define the `test()` and `visualization(number)` function in the object, to use them, run
+We define the `test()` and `visualization(number)` function in the `main.py`, to use them, uncomment the following code in main function and 
 
 ```python
 agent.test()
 agent.visualization(5) # input the number of shape to visualize
 ```
 
-in the main function of `main.py`
+comment `agent.train()`, then run
+
+```python
+python main.py
+```
+
+
+
+
+## See latent interpolation result
+
+We define the `interpolation`  also in `main.py`, to use it, uncomment `agent.interpolation()`, to interpolate between specific shape, input the shape ID in dataset, like `agent.interpolation(177, 1309)`
+
+
+
+## Pretrained weight
+
+We provide pretrained weight for test and interpolation. Download the weight and create a new folder `weight` in the same path as `main.py`, and put the weight into `weight`.
+
+Weight for baseline [link](https://drive.google.com/file/d/1fAbHVaasBZPvFCdS0gxepXuJBkfj_WH6/view?usp=sharing)
+
+Weight for soft boundary [link](https://drive.google.com/file/d/1WHPNrthvsD5-3xWdogG-i1C77ho8GrSj/view?usp=sharing)
+
 
 
 
@@ -59,17 +92,18 @@ We support tensorboard to visualize loss curves when training, run
 tensorboard --logdir event --port 6008
 ```
 
-and open the link `localhost:16008` in explorer to see the training curves
+and open the link `localhost:16008` in explorer to see the training curves.
 
 
 
-## Issue :
+## Example Result
 
-- [ ] Current sampling is time consuming
+![](result\result.JPG)
+
+(a) is groundtruth, (b) is result of baseline, (c) is result of soft boundary, the noise is much less in soft boundary
 
 
 
-To do list :
+![](result\interpolation.JPG)
 
-- [ ] Soft boundary
-- [ ] Sampling method optimization
+Interpolation result, (a) is result of baseline, (b) is result of soft boundary, with smooth operation, the noise is filtered in (a). The detail is better in (b) in the third and fifth chairs (from left to right)
