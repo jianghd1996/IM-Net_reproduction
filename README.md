@@ -107,3 +107,9 @@ and open the link `localhost:16008` in explorer to see the training curves.
 ![](result\interpolation.JPG)
 
 Interpolation result, (a) is result of baseline, (b) is result of soft boundary, with smooth operation, the noise is filtered in (a). The detail is better in (b) in the third and fifth chairs (from left to right)
+
+
+
+## Acknowledgment
+
+Thanks for [Rundi Wu](https://github.com/ChrisWu1997)'s help for this project. To cite IM-Net, please refer to [link](https://www.sfu.ca/~zhiqinc/imgan/Readme.html).
